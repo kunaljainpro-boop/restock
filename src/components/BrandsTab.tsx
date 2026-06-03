@@ -296,7 +296,7 @@ function BrandSheet({ userId, brand, products, allVariants, listItems, onClose, 
         ref={sheetRef}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        style={{ position: "fixed", bottom: 0, left: 0, right: 0, maxWidth: 480, margin: "0 auto", background: "var(--bg)", borderRadius: "26px 26px 0 0", zIndex: 101, display: "flex", flexDirection: "column", maxHeight: "94dvh", animation: "sheetUp 0.28s cubic-bezier(0.2,0.9,0.3,1) both" }}
+        style={{ position: "fixed", bottom: 0, left: 0, right: 0, maxWidth: 480, margin: "0 auto", background: "var(--bg)", borderRadius: "26px 26px 0 0", zIndex: 101, display: "flex", flexDirection: "column", maxHeight: "94dvh", animation: "sheetUp 0.28s cubic-bezier(0.2,0.9,0.3,1) both", overflow: "hidden" }}
       >
         {/* ── Top bar: handle + close ── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 16px 8px", flexShrink: 0, position: "relative" }}>
@@ -343,17 +343,9 @@ function BrandSheet({ userId, brand, products, allVariants, listItems, onClose, 
               </div>
             </div>
 
-            {/* Delete — small, tucked in corner */}
-            {confirmDelete ? (
-              <div className="fade-in" style={{ display: "flex", gap: 6 }}>
-                <button onClick={handleDelete} style={{ height: 34, borderRadius: 10, background: "#ef4444", color: "#fff", border: 0, padding: "0 14px", fontWeight: 800, fontSize: 12 }}>Delete</button>
-                <button onClick={() => setConfirmDelete(false)} style={{ height: 34, width: 34, borderRadius: 10, background: "var(--bg)", color: "var(--text-muted)", border: "1.5px solid var(--border)", display: "grid", placeItems: "center" }}><X size={14} /></button>
-              </div>
-            ) : (
-              <button onClick={() => setConfirmDelete(true)} style={{ width: 34, height: 34, borderRadius: 10, background: "#fff1f2", border: "1.5px solid #fecdd3", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                <Trash2 size={15} color="#ef4444" />
-              </button>
-            )}
+            <button onClick={() => setConfirmDelete(true)} style={{ width: 34, height: 34, borderRadius: 10, background: "#fff1f2", border: "1.5px solid #fecdd3", display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <Trash2 size={15} color="#ef4444" />
+            </button>
           </div>
 
           {/* Logo URL input */}
@@ -401,6 +393,30 @@ function BrandSheet({ userId, brand, products, allVariants, listItems, onClose, 
             </div>
           )}
         </div>
+
+        {/* ── Delete confirm overlay ── */}
+        {confirmDelete && (
+          <div className="fade-in" style={{ position: "absolute", inset: 0, zIndex: 10, background: "rgba(7,20,38,0.55)", backdropFilter: "blur(6px)", borderRadius: "26px 26px 0 0", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 24px" }}>
+            <div style={{ background: "var(--card)", borderRadius: 24, padding: "28px 24px", width: "100%", boxShadow: "0 24px 60px rgba(7,20,38,0.3)", textAlign: "center" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: "#fff1f2", border: "2px solid #fecdd3", display: "grid", placeItems: "center", margin: "0 auto 16px" }}>
+                <Trash2 size={26} color="#ef4444" />
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6 }}>Delete Brand</p>
+              <p style={{ fontSize: 22, fontWeight: 950, color: "var(--text)", marginBottom: 6 }}>{brand.name}</p>
+              <p style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", marginBottom: 24 }}>
+                This will delete all {products.length} product{products.length !== 1 ? "s" : ""} and {variantCount} variant{variantCount !== 1 ? "s" : ""}. Cannot be undone.
+              </p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, height: 48, borderRadius: 14, background: "var(--bg)", color: "var(--text)", border: "1.5px solid var(--border)", fontWeight: 850, fontSize: 15 }}>
+                  Cancel
+                </button>
+                <button onClick={handleDelete} style={{ flex: 1, height: 48, borderRadius: 14, background: "#ef4444", color: "#fff", border: 0, fontWeight: 900, fontSize: 15, boxShadow: "0 4px 16px #ef444450" }}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Product List ── */}
         <div style={{ flex: 1, overflowY: "auto", padding: "0 14px calc(env(safe-area-inset-bottom,0px) + 20px)" }}>
