@@ -70,7 +70,129 @@ export function PrintTab({ userId }: Props) {
   const col1 = lines.slice(0, Math.ceil(lines.length / 2));
   const col2 = lines.slice(Math.ceil(lines.length / 2));
 
-  // ── Share ─────────────────────────────────────────────────────────────────────
+  // ── Share as PDF via navigator.share ─────────────────────────────────────────
+  async function handleSharePDF() {
+    const pdfBytes = buildPDFBytes();
+    const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+    const file = new File([blob], "market-list.pdf", { type: "application/pdf" });
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: `Market List — ${storeName}` });
+        toast("Shared ✓");
+      } catch (e) {
+        if ((e as Error).name !== "AbortError") toast("Share cancelled", "info");
+      }
+    } else {
+      // Fallback: download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "market-list.pdf"; a.click();
+      URL.revokeObjectURL(url);
+      toast("PDF downloaded ✓");
+    }
+  }
+
+  function buildPDFBytes(): Uint8Array {
+    const PW = 595, PH = 842, padX = 40, padY = 40;
+    const lineH = 18, fontSize = 11, titleSize = 16, dateSize = 10;
+    const colW = (PW - padX * 2) / 2;
+
+    // Build content stream
+    const ops: string[] = [];
+    ops.push("BT");
+    let y = PH - padY;
+
+    if (headerOn) {
+      if (showStoreName) {
+        ops.push(`/F1 ${titleSize} Tf`);
+        ops.push(`${padX} ${y} Td`);
+        ops.push(`(${pdfEsc(storeName)}) Tj`);
+        y -= titleSize + 6;
+        ops.push(`0 0 Td`);
+      }
+      if (showDate) {
+        const d = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+        ops.push(`/F1 ${dateSize} Tf`);
+        ops.push(`${padX} ${y} Td`);
+        ops.push(`(${pdfEsc(d)}) Tj`);
+        y -= dateSize + 8;
+        ops.push(`0 0 Td`);
+      }
+      // Divider line
+      ops.push("ET");
+      ops.push(`0.8 0.8 0.8 RG`);
+      ops.push(`${padX} ${y + 2} m ${PW - padX} ${y + 2} l S`);
+      ops.push("BT");
+      y -= 10;
+    }
+
+    ops.push(`/F1 ${fontSize} Tf`);
+    const maxRows = Math.max(col1.length, col2.length);
+    for (let i = 0; i < maxRows; i++) {
+      if (y < padY + lineH) break; // prevent overflow
+      if (col1[i]) {
+        ops.push(`${padX} ${y} Td`);
+        ops.push(`(${pdfEsc(col1[i])}) Tj`);
+        ops.push(`0 0 Td`);
+      }
+      if (col2[i]) {
+        ops.push(`${padX + colW} ${y} Td`);
+        ops.push(`(${pdfEsc(col2[i])}) Tj`);
+        ops.push(`0 0 Td`);
+      }
+      y -= lineH;
+    }
+
+    // Footer
+    ops.push(`/F1 8 Tf`);
+    ops.push(`${padX} ${padY - 10} Td`);
+    ops.push(`(${pdfEsc(`${filteredItems.length} items · ReStock`)}) Tj`);
+    ops.push("ET");
+
+    const stream = ops.join("\n");
+    const streamBytes = new TextEncoder().encode(stream);
+
+    // Build PDF objects
+    const enc = (s: string) => new TextEncoder().encode(s);
+
+    const obj1 = enc("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+    const obj2 = enc("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+    const obj3 = enc(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n`);
+    const obj4Header = enc(`4 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n`);
+    const obj4Footer = enc(`\nendstream\nendobj\n`);
+    const obj5 = enc("5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n");
+
+    const header = enc("%PDF-1.4\n");
+    const offsets: number[] = [];
+    let offset = header.length;
+
+    offsets.push(offset); offset += obj1.length;
+    offsets.push(offset); offset += obj2.length;
+    offsets.push(offset); offset += obj3.length;
+    offsets.push(offset); offset += obj4Header.length + streamBytes.length + obj4Footer.length;
+    offsets.push(offset); offset += obj5.length;
+
+    const xrefOffset = offset;
+    const xref = enc(
+      `xref\n0 6\n0000000000 65535 f \n` +
+      offsets.map(o => `${String(o).padStart(10, "0")} 00000 n `).join("\n") +
+      `\ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`
+    );
+
+    // Concatenate all
+    const parts = [header, obj1, obj2, obj3, obj4Header, streamBytes, obj4Footer, obj5, xref];
+    const total = parts.reduce((s, p) => s + p.length, 0);
+    const result = new Uint8Array(total);
+    let pos = 0;
+    for (const p of parts) { result.set(p, pos); pos += p.length; }
+    return result;
+  }
+
+  function pdfEsc(s: string) {
+    return s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/[^\x20-\x7E]/g, "?");
+  }
+
+  // ── Share text (legacy) ───────────────────────────────────────────────────────
   async function handleShare() {
     const text = buildShareText();
     if (navigator.share) {
@@ -350,10 +472,10 @@ export function PrintTab({ userId }: Props) {
         <ActionBtn
           icon={<Share2 size={18} />}
           label="Share PDF"
-          sublabel="Print / Canon app"
+          sublabel="Canon, Drive, WhatsApp…"
           bg="#ef1d27"
           color="#fff"
-          onClick={handlePrint}
+          onClick={handleSharePDF}
         />
         <ActionBtn
           icon={<Copy size={18} />}
