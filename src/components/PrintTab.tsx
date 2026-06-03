@@ -143,10 +143,6 @@ export function PrintTab({ userId }: Props) {
       y -= lineH;
     }
 
-    // Footer
-    ops.push(`/F1 8 Tf`);
-    ops.push(`${padX} ${padY - 10} Td`);
-    ops.push(`(${pdfEsc(`${filteredItems.length} items · ReStock`)}) Tj`);
     ops.push("ET");
 
     const stream = ops.join("\n");

@@ -169,30 +169,90 @@ function SplashScreen() {
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 function LoginScreen({ onGoogle }: { onGoogle: () => void }) {
+  const [phase, setPhase] = useState<"intro" | "form">("intro");
+
+  useEffect(() => {
+    const t = setTimeout(() => setPhase("form"), 2200);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "30px 20px", background: "linear-gradient(160deg,#fff 0%,#fff3f3 38%,#eef7ff 100%)", position: "relative", overflow: "hidden" }}>
       <Aurora />
-      <section className="fade-in-up" style={{ width: "100%", maxWidth: 390, position: "relative", zIndex: 2 }}>
-        <div style={{ textAlign: "center", marginBottom: 26 }}>
-          <Image src="/restock.png" alt="ReStock" width={116} height={116} priority style={{ width: 116, height: 116, objectFit: "contain", borderRadius: 28, boxShadow: "0 0 0 1px rgba(239,29,39,0.22), 0 0 46px rgba(239,29,39,0.22), 0 16px 48px rgba(7,20,38,0.16)" }} />
-          <h1 style={{ marginTop: 16, fontSize: 38, lineHeight: 1, fontWeight: 950, letterSpacing: 0, color: "#071426" }}>ReStock</h1>
-          <p style={{ marginTop: 8, fontSize: 13, fontWeight: 650, color: "#768398" }}>The Modern FMCG Reorder List</p>
+
+      {/* ── Intro animation: logo flies in from top, settles, then form fades in ── */}
+      <style>{`
+        @keyframes logoIntro {
+          0%   { transform: scale(2.8) translateY(-60px); opacity: 0; filter: blur(12px); }
+          40%  { opacity: 1; filter: blur(0px); }
+          70%  { transform: scale(1.08) translateY(0px); }
+          85%  { transform: scale(0.96) translateY(0px); }
+          100% { transform: scale(1) translateY(0px); opacity: 1; }
+        }
+        @keyframes logoSettle {
+          0%   { transform: scale(1); }
+          100% { transform: scale(1); }
+        }
+        @keyframes titleSlide {
+          0%   { opacity: 0; transform: translateY(18px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes formRise {
+          0%   { opacity: 0; transform: translateY(32px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes glowPulse {
+          0%, 100% { box-shadow: 0 0 0 1px rgba(239,29,39,0.22), 0 0 46px rgba(239,29,39,0.22), 0 16px 48px rgba(7,20,38,0.16); }
+          50%       { box-shadow: 0 0 0 1px rgba(239,29,39,0.35), 0 0 80px rgba(239,29,39,0.38), 0 16px 48px rgba(7,20,38,0.2); }
+        }
+      `}</style>
+
+      <section style={{ width: "100%", maxWidth: 390, position: "relative", zIndex: 2 }}>
+        <div style={{ textAlign: "center", marginBottom: phase === "form" ? 26 : 0 }}>
+          <Image
+            src="/restock.png"
+            alt="ReStock"
+            width={116}
+            height={116}
+            priority
+            style={{
+              width: 116, height: 116, objectFit: "contain", borderRadius: 28,
+              animation: "logoIntro 1.1s cubic-bezier(0.22,1,0.36,1) both, glowPulse 2.8s ease-in-out 1.2s infinite",
+            }}
+          />
+          <h1 style={{
+            marginTop: 16, fontSize: 38, lineHeight: 1, fontWeight: 950, color: "#071426",
+            animation: "titleSlide 0.6s ease 0.9s both",
+          }}>
+            ReStock
+          </h1>
+          <p style={{
+            marginTop: 8, fontSize: 13, fontWeight: 650, color: "#768398",
+            animation: "titleSlide 0.6s ease 1.1s both",
+          }}>
+            The Modern FMCG Reorder List
+          </p>
         </div>
-        <div style={{ background: "rgba(255,255,255,0.88)", border: "1.5px solid rgba(239,29,39,0.12)", borderRadius: 30, padding: "28px 24px", boxShadow: "0 16px 58px rgba(7,20,38,0.12), 0 2px 12px rgba(7,20,38,0.05)", backdropFilter: "blur(18px)" }}>
-          <p style={{ textAlign: "center", fontSize: 19, fontWeight: 900, color: "#071426" }}>Sign in to your restock desk</p>
-          <button
-            onClick={onGoogle}
-            disabled={!isSupabaseConfigured}
-            style={{ width: "100%", height: 54, marginTop: 22, borderRadius: 17, border: "1.5px solid rgba(7,20,38,0.1)", background: "#fff", color: "#071426", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, fontSize: 15, fontWeight: 850, boxShadow: "0 4px 18px rgba(7,20,38,0.08)", cursor: isSupabaseConfigured ? "pointer" : "not-allowed", opacity: isSupabaseConfigured ? 1 : 0.5 }}
-          >
-            <GoogleMark /> Continue with Google
-          </button>
-          {!isSupabaseConfigured && (
-            <p style={{ marginTop: 14, textAlign: "center", fontSize: 12, color: "#ef1d27", fontWeight: 700 }}>
-              Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable login.
-            </p>
-          )}
-        </div>
+
+        {phase === "form" && (
+          <div style={{ animation: "formRise 0.5s ease both" }}>
+            <div style={{ background: "rgba(255,255,255,0.88)", border: "1.5px solid rgba(239,29,39,0.12)", borderRadius: 30, padding: "28px 24px", boxShadow: "0 16px 58px rgba(7,20,38,0.12), 0 2px 12px rgba(7,20,38,0.05)", backdropFilter: "blur(18px)" }}>
+              <p style={{ textAlign: "center", fontSize: 19, fontWeight: 900, color: "#071426" }}>Sign in to your restock desk</p>
+              <button
+                onClick={onGoogle}
+                disabled={!isSupabaseConfigured}
+                style={{ width: "100%", height: 54, marginTop: 22, borderRadius: 17, border: "1.5px solid rgba(7,20,38,0.1)", background: "#fff", color: "#071426", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, fontSize: 15, fontWeight: 850, boxShadow: "0 4px 18px rgba(7,20,38,0.08)", cursor: isSupabaseConfigured ? "pointer" : "not-allowed", opacity: isSupabaseConfigured ? 1 : 0.5 }}
+              >
+                <GoogleMark /> Continue with Google
+              </button>
+              {!isSupabaseConfigured && (
+                <p style={{ marginTop: 14, textAlign: "center", fontSize: 12, color: "#ef1d27", fontWeight: 700 }}>
+                  Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable login.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </section>
     </main>
   );
