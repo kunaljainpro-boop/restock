@@ -3,6 +3,7 @@
 import { Check, ScanBarcode, Search, X, Plus, ChevronRight, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { parseSearch } from "@/lib/parse-search";
 import { useToast } from "@/lib/toast-context";
@@ -316,7 +317,7 @@ export function HomeTab({ userId, onTabChange }: Props) {
 
       {showScanner && <BarcodeScanner onDetected={handleBarcode} onClose={() => setShowScanner(false)} />}
 
-      {showAddModal && (
+      {showAddModal && typeof document !== "undefined" && createPortal(
         <QuickAddModal
           userId={userId}
           brands={brands}
@@ -348,7 +349,8 @@ export function HomeTab({ userId, onTabChange }: Props) {
             });
           }}
           qc={qc}
-        />
+        />,
+        document.body
       )}
     </div>
   );
