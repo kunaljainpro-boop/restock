@@ -278,148 +278,130 @@ function BrandSheet({ userId, brand, products, allVariants, listItems, onClose, 
     }
   }
 
-  // ── Swipe down to close ──
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef(0);
-
-  function onTouchStart(e: React.TouchEvent) {
-    dragStartY.current = e.touches[0].clientY;
-  }
-  function onTouchEnd(e: React.TouchEvent) {
-    const dy = e.changedTouches[0].clientY - dragStartY.current;
-    if (dy > 80) onClose();
-  }
+  function onTouchStart(e: React.TouchEvent) { dragStartY.current = e.touches[0].clientY; }
+  function onTouchEnd(e: React.TouchEvent) { if (e.changedTouches[0].clientY - dragStartY.current > 80) onClose(); }
 
   return (
     <>
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(10,10,30,0.4)", zIndex: 100, backdropFilter: "blur(2px)" }} />
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(7,20,38,0.5)", zIndex: 100, backdropFilter: "blur(3px)" }} />
       <div
         ref={sheetRef}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        style={{ position: "fixed", bottom: 0, left: 0, right: 0, maxWidth: 480, margin: "0 auto", background: "#eef0f8", borderRadius: "24px 24px 0 0", zIndex: 101, display: "flex", flexDirection: "column", maxHeight: "92dvh", animation: "sheetUp 0.26s cubic-bezier(0.2,0.9,0.3,1) both" }}
+        style={{ position: "fixed", bottom: 0, left: 0, right: 0, maxWidth: 480, margin: "0 auto", background: "var(--bg)", borderRadius: "26px 26px 0 0", zIndex: 101, display: "flex", flexDirection: "column", maxHeight: "94dvh", animation: "sheetUp 0.28s cubic-bezier(0.2,0.9,0.3,1) both" }}
       >
-        {/* drag handle + red close */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 12px 4px", flexShrink: 0, position: "relative" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 99, background: "rgba(0,0,0,0.13)" }} />
-          <button
-            onClick={onClose}
-            style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 99, background: "#ef1d27", border: 0, display: "grid", placeItems: "center", color: "#fff", boxShadow: "0 2px 8px #ef1d2760" }}
-          >
-            <X size={15} strokeWidth={2.5} />
+        {/* ── Top bar: handle + close ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 16px 8px", flexShrink: 0, position: "relative" }}>
+          <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--border)" }} />
+          <button onClick={onClose} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, borderRadius: 99, background: "#ef1d27", border: 0, display: "grid", placeItems: "center", color: "#fff", boxShadow: "0 3px 10px #ef1d2755" }}>
+            <X size={16} strokeWidth={2.8} />
           </button>
         </div>
 
-        {/* ── Header ── */}
-        <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", flexShrink: 0 }}>
-          <div style={{ padding: "14px 16px 0" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-              {/* Logo (tap to edit) */}
-              <button
-                onClick={() => { setEditingLogo(v => !v); setLogoVal(brand.logo_url ?? ""); }}
-                style={{ width: 54, height: 54, borderRadius: 14, overflow: "hidden", display: "grid", placeItems: "center", background: "#f4f4f8", flexShrink: 0, border: editingLogo ? "2px solid #4f46e5" : "none" }}
-              >
-                <ImgWithFallback src={brand.logo_url} alt={brand.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} fallbackStyle={{ fontSize: 22 }} />
-              </button>
+        {/* ── Brand header card ── */}
+        <div style={{ margin: "0 14px 12px", background: "var(--card)", borderRadius: 22, border: "1.5px solid var(--border)", overflow: "hidden", flexShrink: 0, boxShadow: "0 4px 20px rgba(7,20,38,0.07)" }}>
+          {/* Brand identity row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 16px 12px" }}>
+            <button
+              onClick={() => { setEditingLogo(v => !v); setLogoVal(brand.logo_url ?? ""); }}
+              style={{ width: 60, height: 60, borderRadius: 16, overflow: "hidden", display: "grid", placeItems: "center", background: "var(--bg)", flexShrink: 0, border: editingLogo ? "2px solid #4f46e5" : "1.5px solid var(--border)", position: "relative" }}
+            >
+              <ImgWithFallback src={brand.logo_url} alt={brand.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} fallbackStyle={{ fontSize: 24 }} />
+              <span style={{ position: "absolute", bottom: 2, right: 2, width: 16, height: 16, borderRadius: 5, background: "rgba(79,70,229,0.9)", display: "grid", placeItems: "center" }}>
+                <ImageIcon size={9} color="#fff" />
+              </span>
+            </button>
 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {editingName ? (
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <input
-                      autoFocus
-                      value={nameVal}
-                      onChange={e => setNameVal(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }}
-                      style={{ flex: 1, fontSize: 18, fontWeight: 900, color: "#1a1a3e", background: "#f4f4f8", border: "1.5px solid #4f46e5", borderRadius: 10, padding: "4px 10px", outline: "none" }}
-                    />
-                    <button onClick={saveName} style={{ width: 34, height: 34, borderRadius: 10, background: "#4f46e5", color: "#fff", border: 0, display: "grid", placeItems: "center" }}>
-                      <Check size={16} />
-                    </button>
-                    <button onClick={() => { setEditingName(false); setNameVal(brand.name); }} style={{ width: 34, height: 34, borderRadius: 10, background: "#f4f4f8", color: "#9ca3af", border: 0, display: "grid", placeItems: "center" }}>
-                      <X size={16} />
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => setEditingName(true)} style={{ background: "none", border: 0, padding: 0, textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>
-                    <h2 style={{ fontSize: 20, fontWeight: 950, color: "#1a1a3e", lineHeight: 1 }}>{brand.name}</h2>
-                    <Edit2 size={13} color="#9ca3af" />
-                  </button>
-                )}
-                <p style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af", marginTop: 3 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {editingName ? (
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input autoFocus value={nameVal} onChange={e => setNameVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }}
+                    style={{ flex: 1, fontSize: 18, fontWeight: 900, color: "var(--text)", background: "var(--bg)", border: "1.5px solid #4f46e5", borderRadius: 10, padding: "5px 10px", outline: "none" }}
+                  />
+                  <button onClick={saveName} style={{ width: 36, height: 36, borderRadius: 10, background: "#4f46e5", color: "#fff", border: 0, display: "grid", placeItems: "center" }}><Check size={16} /></button>
+                  <button onClick={() => { setEditingName(false); setNameVal(brand.name); }} style={{ width: 36, height: 36, borderRadius: 10, background: "var(--bg)", color: "var(--text-muted)", border: "1.5px solid var(--border)", display: "grid", placeItems: "center" }}><X size={16} /></button>
+                </div>
+              ) : (
+                <button onClick={() => setEditingName(true)} style={{ background: "none", border: 0, padding: 0, textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>
+                  <h2 style={{ fontSize: 22, fontWeight: 950, color: "var(--text)", lineHeight: 1 }}>{brand.name}</h2>
+                  <Edit2 size={13} color="var(--text-muted)" />
+                </button>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                <p style={{ fontSize: 12, fontWeight: 650, color: "var(--text-muted)" }}>
                   {products.length} products · {variantCount} variants
                 </p>
               </div>
             </div>
 
-            {/* Logo URL input (inline, no dialog) */}
-            {editingLogo && (
-              <div className="fade-in" style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                <input
-                  autoFocus
-                  value={logoVal}
-                  onChange={e => setLogoVal(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") saveLogo(); if (e.key === "Escape") setEditingLogo(false); }}
-                  placeholder="Paste logo image URL…"
-                  style={{ flex: 1, height: 38, borderRadius: 10, border: "1.5px solid #c7d2fe", background: "#eef2ff", padding: "0 10px", fontSize: 13, fontWeight: 600, color: "#1a1a3e", outline: "none" }}
-                />
-                <button onClick={saveLogo} style={{ height: 38, borderRadius: 10, background: "#4f46e5", color: "#fff", border: 0, padding: "0 14px", fontWeight: 800, fontSize: 13 }}>Save</button>
-                <button onClick={() => setEditingLogo(false)} style={{ height: 38, width: 38, borderRadius: 10, background: "#f4f4f8", color: "#9ca3af", border: 0, fontWeight: 900 }}>✕</button>
+            {/* Delete — small, tucked in corner */}
+            {confirmDelete ? (
+              <div className="fade-in" style={{ display: "flex", gap: 6 }}>
+                <button onClick={handleDelete} style={{ height: 34, borderRadius: 10, background: "#ef4444", color: "#fff", border: 0, padding: "0 14px", fontWeight: 800, fontSize: 12 }}>Delete</button>
+                <button onClick={() => setConfirmDelete(false)} style={{ height: 34, width: 34, borderRadius: 10, background: "var(--bg)", color: "var(--text-muted)", border: "1.5px solid var(--border)", display: "grid", placeItems: "center" }}><X size={14} /></button>
               </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} style={{ width: 34, height: 34, borderRadius: 10, background: "#fff1f2", border: "1.5px solid #fecdd3", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                <Trash2 size={15} color="#ef4444" />
+              </button>
             )}
-
-            {/* Action row */}
-            <div style={{ display: "flex", gap: 8, paddingBottom: 14 }}>
-              {/* + Add product */}
-              <button
-                onClick={() => { setAddingProduct(v => !v); setNewProdName(""); }}
-                style={{ flex: 2, height: 38, borderRadius: 12, background: addingProduct ? "#eef2ff" : "#4f46e5", color: addingProduct ? "#4f46e5" : "#fff", border: addingProduct ? "1.5px solid #c7d2fe" : 0, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-              >
-                <Plus size={15} /> {addingProduct ? "Adding…" : "Add Product"}
-              </button>
-
-              {/* Print toggle — instant */}
-              <button
-                onClick={togglePrint}
-                style={{ flex: 2, height: 38, borderRadius: 12, background: brand.print_enabled ? "#ecfdf5" : "#f4f4f8", color: brand.print_enabled ? "#059669" : "#9ca3af", border: brand.print_enabled ? "1.5px solid #a7f3d0" : "1.5px solid #e5e7eb", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
-              >
-                <Printer size={14} /> {brand.print_enabled ? "In Print" : "No Print"}
-              </button>
-
-              {/* Close */}
-              <button onClick={onClose} style={{ width: 38, height: 38, borderRadius: 12, background: "#f4f4f8", color: "#9ca3af", border: 0, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                <X size={16} />
-              </button>
-            </div>
           </div>
 
-          {/* Add product form (inline, no dialog) */}
+          {/* Logo URL input */}
+          {editingLogo && (
+            <div className="fade-in" style={{ borderTop: "1px solid var(--border)", padding: "10px 14px", display: "flex", gap: 8 }}>
+              <input autoFocus value={logoVal} onChange={e => setLogoVal(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") saveLogo(); if (e.key === "Escape") setEditingLogo(false); }}
+                placeholder="Paste brand logo URL…"
+                style={{ flex: 1, height: 38, borderRadius: 10, border: "1.5px solid #c7d2fe", background: "var(--bg)", padding: "0 10px", fontSize: 13, fontWeight: 600, color: "var(--text)", outline: "none" }}
+              />
+              <button onClick={saveLogo} style={{ height: 38, borderRadius: 10, background: "#4f46e5", color: "#fff", border: 0, padding: "0 14px", fontWeight: 800, fontSize: 13 }}>Save</button>
+              <button onClick={() => setEditingLogo(false)} style={{ height: 38, width: 38, borderRadius: 10, background: "var(--bg)", color: "var(--text-muted)", border: "1.5px solid var(--border)" }}>✕</button>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 10, padding: "0 14px 14px" }}>
+            <button
+              onClick={() => { setAddingProduct(v => !v); setNewProdName(""); }}
+              style={{ flex: 1, height: 42, borderRadius: 13, background: addingProduct ? "var(--bg)" : "#4f46e5", color: addingProduct ? "#4f46e5" : "#fff", border: addingProduct ? "1.5px solid #c7d2fe" : 0, fontWeight: 850, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxShadow: addingProduct ? "none" : "0 4px 14px #4f46e540" }}
+            >
+              <Plus size={16} /> {addingProduct ? "Adding…" : "Add Product"}
+            </button>
+            <button
+              onClick={togglePrint}
+              style={{ height: 42, borderRadius: 13, background: brand.print_enabled ? "#ecfdf5" : "var(--bg)", color: brand.print_enabled ? "#059669" : "var(--text-muted)", border: brand.print_enabled ? "1.5px solid #a7f3d0" : "1.5px solid var(--border)", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 16px" }}
+            >
+              <Printer size={15} /> {brand.print_enabled ? "In Print" : "No Print"}
+            </button>
+          </div>
+
+          {/* Add product form */}
           {addingProduct && (
-            <div className="fade-in" style={{ borderTop: "1px solid #f0f2f8", padding: "12px 16px" }}>
-              <p style={{ fontSize: 11, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>New Product</p>
+            <div className="fade-in" style={{ borderTop: "1px solid var(--border)", padding: "12px 14px 14px" }}>
+              <p style={{ fontSize: 10.5, fontWeight: 850, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>New Product</p>
               <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  autoFocus
-                  value={newProdName}
-                  onChange={e => setNewProdName(e.target.value)}
+                <input autoFocus value={newProdName} onChange={e => setNewProdName(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") addProduct(); if (e.key === "Escape") setAddingProduct(false); }}
                   placeholder="Product name…"
-                  style={{ flex: 1, height: 40, borderRadius: 11, border: "1.5px solid #c7d2fe", background: "#eef2ff", padding: "0 12px", fontSize: 14, fontWeight: 600, color: "#1a1a3e", outline: "none" }}
+                  style={{ flex: 1, height: 42, borderRadius: 12, border: "1.5px solid #c7d2fe", background: "var(--bg)", padding: "0 12px", fontSize: 14, fontWeight: 600, color: "var(--text)", outline: "none" }}
                 />
-                <button onClick={addProduct} style={{ height: 40, borderRadius: 11, background: "#4f46e5", color: "#fff", border: 0, padding: "0 16px", fontWeight: 800, fontSize: 13 }}>
-                  Add
-                </button>
-                <button onClick={() => setAddingProduct(false)} style={{ height: 40, width: 40, borderRadius: 11, background: "#f4f4f8", color: "#9ca3af", border: 0, fontWeight: 900 }}>✕</button>
+                <button onClick={addProduct} style={{ height: 42, borderRadius: 12, background: "#4f46e5", color: "#fff", border: 0, padding: "0 18px", fontWeight: 850, fontSize: 14 }}>Add</button>
+                <button onClick={() => setAddingProduct(false)} style={{ height: 42, width: 42, borderRadius: 12, background: "var(--bg)", color: "var(--text-muted)", border: "1.5px solid var(--border)", fontSize: 16 }}>✕</button>
               </div>
             </div>
           )}
         </div>
 
         {/* ── Product List ── */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 14px calc(env(safe-area-inset-bottom,0px) + 20px)" }}>
           {products.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "36px 24px" }}>
-              <p style={{ fontSize: 15, fontWeight: 700, color: "#374151" }}>No products yet</p>
-              <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>Tap "Add Product" above</p>
+            <div style={{ textAlign: "center", padding: "40px 24px" }}>
+              <p style={{ fontSize: 15, fontWeight: 750, color: "var(--text)" }}>No products yet</p>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Tap "Add Product" above</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -440,24 +422,6 @@ function BrandSheet({ userId, brand, products, allVariants, listItems, onClose, 
                 />
               ))}
             </div>
-          )}
-        </div>
-
-        {/* ── Footer (Delete) ── */}
-        <div style={{ padding: "10px 14px calc(env(safe-area-inset-bottom,0px) + 12px)", background: "#fff", borderTop: "1px solid #e5e7eb", flexShrink: 0 }}>
-          {confirmDelete ? (
-            <div className="fade-in" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <p style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#374151" }}>Delete "{brand.name}"?</p>
-              <button onClick={handleDelete} style={{ height: 40, borderRadius: 12, background: "#ef4444", color: "#fff", border: 0, padding: "0 20px", fontWeight: 800, fontSize: 13 }}>Delete</button>
-              <button onClick={() => setConfirmDelete(false)} style={{ height: 40, borderRadius: 12, background: "#f4f4f8", color: "#6b7280", border: 0, padding: "0 16px", fontWeight: 800, fontSize: 13 }}>Cancel</button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              style={{ width: "100%", height: 44, borderRadius: 14, background: "#fff1f2", border: "1.5px solid #fecdd3", color: "#ef4444", fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-            >
-              <Trash2 size={15} /> Delete Brand
-            </button>
           )}
         </div>
       </div>
