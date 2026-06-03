@@ -402,84 +402,111 @@ export async function smartCreateSync(
   }
 }
 
-// ── External barcode lookup — multiple providers ─────────────────────────────
+// ── External barcode lookup — ALL providers in PARALLEL ──────────────────────
 export async function lookupBarcode(barcode: string): Promise<{
   brand?: string; product?: string; variant?: string; image?: string;
 } | null> {
 
-  function clean(s?: string) { return s?.trim().replace(/^\s*,\s*/, "") || undefined; }
+  function clean(s?: string) { return s?.trim().replace(/^\s*,\s*/, "").replace(/\s+/g, " ") || undefined; }
+  const T = 5000; // 5s timeout per provider
 
-  // Provider 1: Open Food Facts — India instance first (better FMCG coverage)
-  for (const host of ["in.openfoodfacts.org", "world.openfoodfacts.org"]) {
-    try {
-      const r = await fetch(
-        `https://${host}/api/v2/product/${barcode}?fields=product_name,brands,quantity,image_front_url`,
-        { signal: AbortSignal.timeout(4000) }
-      );
-      if (r.ok) {
-        const j = await r.json();
-        if (j.status === 1 && j.product?.product_name) {
-          const p = j.product;
-          return {
-            brand:   clean(p.brands?.split(",")[0]),
-            product: clean(p.product_name),
-            variant: clean(p.quantity),
-            image:   p.image_front_url || undefined,
-          };
-        }
-      }
-    } catch { /* try next */ }
+  type Result = { brand?: string; product?: string; variant?: string; image?: string } | null;
+
+  async function tryOpenFoodFacts(host: string): Promise<Result> {
+    const r = await fetch(`https://${host}/api/v2/product/${barcode}?fields=product_name,brands,quantity,image_front_url,image_url`, { signal: AbortSignal.timeout(T) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (j.status !== 1 || !j.product?.product_name) return null;
+    const p = j.product;
+    return { brand: clean(p.brands?.split(",")[0]), product: clean(p.product_name), variant: clean(p.quantity), image: p.image_front_url || p.image_url || undefined };
   }
 
-  // Provider 2: Barcode Monster (free, no key)
-  try {
-    const r = await fetch(`https://barcode.monster/api/${barcode}`, { signal: AbortSignal.timeout(4000) });
-    if (r.ok) {
-      const j = await r.json();
-      if (j.description) {
-        return {
-          brand:   clean(j.brand) || clean(j.manufacturer),
-          product: clean(j.description),
-          variant: undefined,
-          image:   undefined,
-        };
-      }
-    }
-  } catch { /* try next */ }
+  async function tryBarcodeMonster(): Promise<Result> {
+    const r = await fetch(`https://barcode.monster/api/${barcode}`, { signal: AbortSignal.timeout(T) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j.description) return null;
+    return { brand: clean(j.brand) || clean(j.manufacturer), product: clean(j.description), variant: undefined, image: undefined };
+  }
 
-  // Provider 3: UPC Item DB
-  try {
-    const r = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`, { signal: AbortSignal.timeout(4000) });
-    if (r.ok) {
-      const j = await r.json();
-      const item = j.items?.[0];
-      if (item?.title) {
-        return {
-          brand:   clean(item.brand),
-          product: clean(item.title),
-          variant: clean(item.size),
-          image:   item.images?.[0] || undefined,
-        };
-      }
-    }
-  } catch { /* try next */ }
+  async function tryUpcItemDb(): Promise<Result> {
+    const r = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`, { signal: AbortSignal.timeout(T) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const item = j.items?.[0];
+    if (!item?.title) return null;
+    return { brand: clean(item.brand), product: clean(item.title), variant: clean(item.size), image: item.images?.[0] || undefined };
+  }
 
-  // Provider 4: Open EAN (no key needed for basic)
-  try {
-    const r = await fetch(`https://www.ean-search.org/perl/ean-search.pl?q=${barcode}&lang=1&format=json`, { signal: AbortSignal.timeout(4000) });
-    if (r.ok) {
-      const j = await r.json();
-      const item = Array.isArray(j) ? j[0] : j;
-      if (item?.name) {
-        return {
-          brand:   undefined,
-          product: clean(item.name),
-          variant: undefined,
-          image:   undefined,
-        };
-      }
-    }
-  } catch { /* nothing */ }
+  async function tryOpenBeautyFacts(): Promise<Result> {
+    const r = await fetch(`https://world.openbeautyfacts.org/api/v2/product/${barcode}?fields=product_name,brands,quantity,image_front_url`, { signal: AbortSignal.timeout(T) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (j.status !== 1 || !j.product?.product_name) return null;
+    const p = j.product;
+    return { brand: clean(p.brands?.split(",")[0]), product: clean(p.product_name), variant: clean(p.quantity), image: p.image_front_url || undefined };
+  }
 
-  return null;
+  async function tryOpenPetFoodFacts(): Promise<Result> {
+    const r = await fetch(`https://world.openpetfoodfacts.org/api/v2/product/${barcode}?fields=product_name,brands,quantity,image_front_url`, { signal: AbortSignal.timeout(T) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (j.status !== 1 || !j.product?.product_name) return null;
+    const p = j.product;
+    return { brand: clean(p.brands?.split(",")[0]), product: clean(p.product_name), variant: clean(p.quantity), image: p.image_front_url || undefined };
+  }
+
+  async function tryDatakick(): Promise<Result> {
+    const r = await fetch(`https://www.datakick.org/api/items/${barcode}`, { signal: AbortSignal.timeout(T) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j.name) return null;
+    return { brand: clean(j.brand_name), product: clean(j.name), variant: clean(j.size), image: j.images?.[0]?.url || undefined };
+  }
+
+  async function tryOKFN(): Promise<Result> {
+    const r = await fetch(`https://product.okfn.org/api/v0/product/${barcode}.json`, { signal: AbortSignal.timeout(T) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const p = j.product;
+    if (!p?.name) return null;
+    return { brand: clean(p.brand), product: clean(p.name), variant: undefined, image: p.imageUrl || undefined };
+  }
+
+  async function tryEanSearch(): Promise<Result> {
+    const r = await fetch(`https://www.ean-search.org/perl/ean-search.pl?q=${barcode}&lang=1&format=json`, { signal: AbortSignal.timeout(T) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const item = Array.isArray(j) ? j[0] : j;
+    if (!item?.name) return null;
+    return { brand: undefined, product: clean(item.name), variant: undefined, image: undefined };
+  }
+
+  // Run ALL providers in parallel — return first valid result
+  const promises: Promise<Result>[] = [
+    tryOpenFoodFacts("in.openfoodfacts.org"),
+    tryOpenFoodFacts("world.openfoodfacts.org"),
+    tryOpenFoodFacts("fr.openfoodfacts.org"),
+    tryUpcItemDb(),
+    tryBarcodeMonster(),
+    tryOpenBeautyFacts(),
+    tryOpenPetFoodFacts(),
+    tryDatakick(),
+    tryOKFN(),
+    tryEanSearch(),
+  ];
+
+  // Race: first non-null result wins
+  return new Promise((resolve) => {
+    let settled = 0;
+    let resolved = false;
+    promises.forEach(p =>
+      p.then(r => {
+        if (!resolved && r?.product) { resolved = true; resolve(r); }
+      }).catch(() => {}).finally(() => {
+        settled++;
+        if (settled === promises.length && !resolved) resolve(null);
+      })
+    );
+  });
 }
