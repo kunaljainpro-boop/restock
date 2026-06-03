@@ -278,14 +278,36 @@ function BrandSheet({ userId, brand, products, allVariants, listItems, onClose, 
     }
   }
 
+  // ── Swipe down to close ──
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef(0);
+
+  function onTouchStart(e: React.TouchEvent) {
+    dragStartY.current = e.touches[0].clientY;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    const dy = e.changedTouches[0].clientY - dragStartY.current;
+    if (dy > 80) onClose();
+  }
+
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(10,10,30,0.4)", zIndex: 100, backdropFilter: "blur(2px)" }} />
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, maxWidth: 480, margin: "0 auto", background: "#eef0f8", borderRadius: "24px 24px 0 0", zIndex: 101, display: "flex", flexDirection: "column", maxHeight: "92dvh", animation: "sheetUp 0.26s cubic-bezier(0.2,0.9,0.3,1) both" }}>
-
-        {/* drag handle */}
-        <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px", flexShrink: 0 }}>
+      <div
+        ref={sheetRef}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        style={{ position: "fixed", bottom: 0, left: 0, right: 0, maxWidth: 480, margin: "0 auto", background: "#eef0f8", borderRadius: "24px 24px 0 0", zIndex: 101, display: "flex", flexDirection: "column", maxHeight: "92dvh", animation: "sheetUp 0.26s cubic-bezier(0.2,0.9,0.3,1) both" }}
+      >
+        {/* drag handle + red close */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 12px 4px", flexShrink: 0, position: "relative" }}>
           <div style={{ width: 36, height: 4, borderRadius: 99, background: "rgba(0,0,0,0.13)" }} />
+          <button
+            onClick={onClose}
+            style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 99, background: "#ef1d27", border: 0, display: "grid", placeItems: "center", color: "#fff", boxShadow: "0 2px 8px #ef1d2760" }}
+          >
+            <X size={15} strokeWidth={2.5} />
+          </button>
         </div>
 
         {/* ── Header ── */}
