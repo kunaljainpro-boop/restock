@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Copy } from "lucide-react";
 import { useState, useMemo } from "react";
 
 function ImgSafe({ src, alt, style, fallback }: { src: string; alt: string; style: React.CSSProperties; fallback: string }) {
@@ -8,7 +8,7 @@ function ImgSafe({ src, alt, style, fallback }: { src: string; alt: string; styl
   if (failed) return <span style={{ fontSize: 22, fontWeight: 900, color: "var(--text-dim)" }}>{fallback}</span>;
   return <img src={src} alt={alt} style={style} onError={() => setFailed(true)} referrerPolicy="no-referrer" />;
 }
-import { useMarketList, useCompleteListItem } from "@/lib/use-db";
+import { useMarketList, useCompleteListItem, useBrands } from "@/lib/use-db";
 import { useToast } from "@/lib/toast-context";
 import type { MarketListItemFull } from "@/lib/types";
 
@@ -16,10 +16,37 @@ interface Props { userId: string; }
 
 export function ListTab({ userId }: Props) {
   const { data: items = [], isLoading } = useMarketList(userId);
+  const { data: brands = [] } = useBrands(userId);
   const completeItem = useCompleteListItem(userId);
   const { toast } = useToast();
   const [activeFilter, setActiveFilter] = useState("all");
   const [completing, setCompleting] = useState<Set<string>>(new Set());
+
+  async function handleCopy() {
+    const lines = filtered.map(item => {
+      const p = item.variant?.product;
+      const b = p?.brand;
+      if (!b || !p) return "";
+      const brand = brands.find(br => br.id === b.id);
+      const showBrand = brand?.print_enabled ?? true;
+      return showBrand
+        ? `${b.name}  ${p.name}  ${item.variant.name}`
+        : `${p.name}  ${item.variant.name}`;
+    }).filter(Boolean);
+
+    const text = lines.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    const activeBrandName = activeFilter === "all"
+      ? null
+      : listBrands.find(b => b.id === activeFilter)?.name;
+    toast(activeBrandName ? `✓ ${activeBrandName} copied` : `✓ All ${lines.length} items copied`);
+  }
 
   // Derive unique brands from list
   const listBrands = useMemo(() => {
@@ -69,9 +96,20 @@ export function ListTab({ userId }: Props) {
       {/* Header */}
       <div style={{ padding: "0 16px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ fontSize: 30, fontWeight: 950, color: "var(--text)" }}>Market List</h1>
-        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-muted)", background: "var(--card)", borderRadius: 10, padding: "4px 10px", border: "1.5px solid var(--border)" }}>
-          {filtered.length} items
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-muted)", background: "var(--card)", borderRadius: 10, padding: "4px 10px", border: "1.5px solid var(--border)" }}>
+            {filtered.length} items
+          </span>
+          {filtered.length > 0 && (
+            <button
+              onClick={handleCopy}
+              style={{ height: 34, borderRadius: 10, border: "1.5px solid var(--border)", background: "var(--card)", display: "flex", alignItems: "center", gap: 6, padding: "0 12px", color: "var(--text-muted)", fontWeight: 800, fontSize: 13, transition: "all 0.15s ease" }}
+            >
+              <Copy size={14} />
+              Copy
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Brand Filters */}

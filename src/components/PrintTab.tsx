@@ -464,7 +464,7 @@ export function PrintTab({ userId }: Props) {
       )}
 
       {/* ── Action buttons ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
+      <div style={{ marginTop: 4 }}>
         <ActionBtn
           icon={<Share2 size={18} />}
           label="Share PDF"
@@ -472,15 +472,6 @@ export function PrintTab({ userId }: Props) {
           bg="#ef1d27"
           color="#fff"
           onClick={handleSharePDF}
-        />
-        <ActionBtn
-          icon={<Copy size={18} />}
-          label="Copy Text"
-          sublabel="WhatsApp, etc."
-          bg="var(--card)"
-          color="var(--text)"
-          border
-          onClick={handleCopy}
         />
       </div>
 
