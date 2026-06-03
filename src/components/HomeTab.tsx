@@ -182,30 +182,62 @@ export function HomeTab({ userId, onTabChange }: Props) {
   // ── Barcode handler ───────────────────────────────────────────────────────
   async function handleBarcode(barcode: string) {
     setShowScanner(false);
-    // Check local DB first
-    const local = barcodes.find((b) => b.barcode === barcode);
-    if (local?.variant_id) {
-      const variant = variants.find((v) => v.id === local.variant_id);
+
+    // 1. Check React Query cache
+    let savedRecord = barcodes.find((b) => b.barcode === barcode);
+
+    // 2. Cache miss? Query Supabase directly — prevents "not found" when cache not loaded yet
+    if (!savedRecord?.variant_id) {
+      try {
+        const { supabase } = await import("@/lib/supabase");
+        if (supabase) {
+          const { data } = await supabase
+            .from("barcodes").select("*")
+            .eq("user_id", userId).eq("barcode", barcode)
+            .maybeSingle();
+          if (data) {
+            savedRecord = data;
+            // Refresh cache so next scan is instant
+            qc.invalidateQueries({ queryKey: ["barcodes", userId] });
+          }
+        }
+      } catch { /* offline — proceed to API lookup */ }
+    }
+
+    // 3. Barcode is saved — auto-add product to list directly
+    if (savedRecord?.variant_id) {
+      const variant = variants.find((v) => v.id === savedRecord!.variant_id);
       const product = products.find((p) => p.id === variant?.product_id);
-      const brand = brands.find((b) => b.id === product?.brand_id);
+      const brand   = brands.find((b) => b.id === product?.brand_id);
       if (variant && product && brand) {
-        setResults([{ brand, product, variant, inList: listVariantIds.has(variant.id), listItemId: null }]);
-        toast(`Found: ${brand.name} — ${product.name}`, "info");
+        const alreadyInList = listVariantIds.has(variant.id);
+        if (!alreadyInList) {
+          const listItemId = crypto.randomUUID();
+          const now = new Date().toISOString();
+          const newItem: MarketListItemFull = {
+            id: listItemId, user_id: userId, variant_id: variant.id,
+            added_at: now, completed_at: null,
+            variant: { ...variant, product: { ...product, brand } },
+          };
+          qc.setQueryData(["list", userId], (old: MarketListItemFull[]) => [newItem, ...(old ?? [])]);
+          addToList.mutate({ variantId: variant.id, listItemId }, {
+            onError: () => qc.invalidateQueries({ queryKey: ["list", userId] }),
+          });
+          toast(`✓ ${brand.name} — ${product.name} · ${variant.name} added`);
+        } else {
+          toast(`${brand.name} — ${product.name} already in list`, "info");
+        }
+        setResults([{ brand, product, variant, inList: true, listItemId: null }]);
         return;
       }
     }
+
+    // 4. Not saved — lookup online, open add modal
     toast("Looking up barcode…", "info");
     const info = await lookupBarcode(barcode);
-    // Open add modal — pre-filled if found, empty if not
-    setAddPrefill({
-      brand: info?.brand,
-      product: info?.product,
-      variant: info?.variant,
-      image: info?.image,
-      barcode,
-    });
+    setAddPrefill({ brand: info?.brand, product: info?.product, variant: info?.variant, image: info?.image, barcode });
     setShowAddModal(true);
-    if (!info) toast("Product not found — add manually", "info");
+    if (!info) toast("Product not found — fill details", "info");
   }
 
   const syncText = (() => {
