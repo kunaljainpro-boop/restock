@@ -481,14 +481,9 @@ function QuickAddModal({ userId, brands, products, variants, prefill, onClose, o
     const variantId = existingVariant?.id ?? crypto.randomUUID();
     const finalVariant: Variant = existingVariant ?? { id: variantId, user_id: userId, product_id: productId, name: variantName.trim(), created_at: now };
 
-    // Optimistic cache updates
-    if (!existingBrand) qc.setQueryData(["brands", userId], (old: Brand[]) => [...(old ?? []), finalBrand].sort((a, b) => a.name.localeCompare(b.name)));
-    if (!existingProduct) qc.setQueryData(["products", userId], (old: Product[]) => [...(old ?? []), finalProduct].sort((a, b) => a.name.localeCompare(b.name)));
-    if (!existingVariant) qc.setQueryData(["variants", userId], (old: Variant[]) => [...(old ?? []), finalVariant]);
-
     if (addToListFlag) onAddToList(finalVariant, finalProduct, finalBrand);
 
-    // DB writes
+    // DB writes — mutations handle optimistic cache updates via onMutate
     try {
       if (!existingBrand) await createBrand.mutateAsync({ id: brandId, name: brandSearch.trim() });
       if (!existingProduct) await createProduct.mutateAsync({ id: productId, brandId, name: productName.trim() });
