@@ -531,7 +531,7 @@ function ProductCard({ brand, product, variants, listVariantIds, onToggleVariant
         {/* Product image (if available) or brand logo fallback */}
         <button
           onClick={() => { setEditingLogo(v => !v); setLogoVal(product.image_url ?? ""); }}
-          style={{ width: 64, height: 64, borderRadius: 14, overflow: "hidden", display: "grid", placeItems: "center", background: "#f4f4f8", flexShrink: 0, border: editingLogo ? "2px solid #4f46e5" : "1px solid rgba(0,0,0,0.07)", position: "relative", marginLeft: -4 }}
+          style={{ width: 72, height: 72, borderRadius: 16, overflow: "hidden", display: "grid", placeItems: "center", background: "#f4f4f8", flexShrink: 0, border: editingLogo ? "2px solid #4f46e5" : "1px solid rgba(0,0,0,0.07)", position: "relative", marginLeft: -8 }}
         >
           {product.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element

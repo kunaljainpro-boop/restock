@@ -1,6 +1,6 @@
 "use client";
 
-import { AlignLeft, ChevronDown, ChevronUp, Columns, Copy, Image as ImageIcon, Printer, Share2, Store } from "lucide-react";
+import { AlignLeft, ChevronDown, ChevronUp, Columns, Copy, Printer, Share2, Store } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useMarketList, useBrands, useProfile, useUpdateBrand } from "@/lib/use-db";
 import { useToast } from "@/lib/toast-context";
@@ -349,39 +349,20 @@ export function PrintTab({ userId }: Props) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
         <ActionBtn
           icon={<Share2 size={18} />}
-          label="Share Text"
-          sublabel="WhatsApp, etc."
-          bg="#071426"
+          label="Share PDF"
+          sublabel="Print / Canon app"
+          bg="#ef1d27"
           color="#fff"
-          onClick={handleShare}
+          onClick={handlePrint}
         />
-        <ActionBtn
-          icon={<ImageIcon size={18} />}
-          label="Share Image"
-          sublabel="Canon, printer apps"
-          bg="#0891b2"
-          color="#fff"
-          onClick={handleShareAsImage}
-        />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
         <ActionBtn
           icon={<Copy size={18} />}
-          label="Copy"
-          sublabel="Clipboard"
+          label="Copy Text"
+          sublabel="WhatsApp, etc."
           bg="var(--card)"
           color="var(--text)"
           border
           onClick={handleCopy}
-        />
-        <ActionBtn
-          icon={<Printer size={18} />}
-          label="Print"
-          sublabel="Browser dialog"
-          bg="var(--card)"
-          color="var(--text)"
-          border
-          onClick={handlePrint}
         />
       </div>
 
