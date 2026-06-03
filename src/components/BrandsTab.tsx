@@ -1,17 +1,15 @@
 "use client";
 
-import { Edit2, Image as ImageIcon, Plus, ScanBarcode, Search, Trash2, X, Printer, Check, Save } from "lucide-react";
+import { Edit2, Image as ImageIcon, Plus, Search, Trash2, X, Printer, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import {
   useBrands, useProducts, useVariants,
   useCreateBrand, useUpdateBrand, useDeleteBrand,
   useCreateProduct, useUpdateProduct, useDeleteProduct,
   useCreateVariant, useUpdateVariant, useDeleteVariant,
-  useBarcodes, lookupBarcode,
   useMarketList, useAddToList, useRemoveFromList,
 } from "@/lib/use-db";
 import { useQueryClient } from "@tanstack/react-query";
-import { BarcodeScanner } from "./BarcodeScanner";
 import { useToast } from "@/lib/toast-context";
 import { fuzzyFind } from "@/lib/fuzzy";
 import type { Brand, MarketListItemFull, Product, Variant } from "@/lib/types";
@@ -24,31 +22,15 @@ export function BrandsTab({ userId }: Props) {
   const { data: products = [] } = useProducts(userId);
   const { data: variants = [] } = useVariants(userId);
   const { data: listItems = [] } = useMarketList(userId);
-  const { data: barcodes = [] } = useBarcodes(userId);
   const createBrand = useCreateBrand(userId);
   const { toast } = useToast();
 
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Brand | null>(null);
-  const [showScanner, setShowScanner] = useState(false);
   const [addingBrand, setAddingBrand] = useState(false);
   const [newBrandName, setNewBrandName] = useState("");
 
   const filtered = query.trim() ? fuzzyFind(brands, query, b => b.name, 0.35) : brands;
-
-  async function handleBarcode(barcode: string) {
-    setShowScanner(false);
-    const local = barcodes.find(b => b.barcode === barcode);
-    if (local?.variant_id) {
-      const v = variants.find(x => x.id === local.variant_id);
-      const p = products.find(x => x.id === v?.product_id);
-      const br = brands.find(x => x.id === p?.brand_id);
-      if (br) { setSelected(br); return; }
-    }
-    const info = await lookupBarcode(barcode);
-    if (info?.brand) setQuery(info.brand);
-    toast(info ? "Barcode found" : "Unknown barcode", info ? "info" : "error");
-  }
 
   async function saveBrand() {
     if (!newBrandName.trim()) return;
@@ -102,27 +84,16 @@ export function BrandsTab({ userId }: Props) {
           </div>
         )}
 
-        {/* ── Search + Scanner ── */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-          <div style={{ flex: 1, position: "relative" }}>
-            <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }} />
-            <input
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search brands, products…"
-              style={{ width: "100%", height: 44, borderRadius: 14, border: "1.5px solid rgba(0,0,0,0.07)", background: "#fff", paddingLeft: 34, paddingRight: query ? 34 : 12, fontSize: 14, fontWeight: 600, color: "#1a1a3e", outline: "none", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
-            />
-            {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: 0, color: "#9ca3af" }}><X size={15} /></button>}
-          </div>
-          <button onClick={() => setShowScanner(true)} style={{ width: 76, height: 44, borderRadius: 14, border: "none", background: "#4f46e5", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, flexShrink: 0, boxShadow: "0 4px 12px #4f46e540", overflow: "hidden", position: "relative", padding: 0 }}>
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "stretch", gap: 3, padding: "5px 7px", opacity: 0.18 }}>
-              {[3,1,2,1,3,1,2,1,3,1,2,1,3,1,2].map((w, i) => (
-                <div key={i} style={{ flex: w, background: "#fff", borderRadius: 1 }} />
-              ))}
-            </div>
-            <ScanBarcode size={16} color="#fff" style={{ position: "relative", zIndex: 1 }} />
-            <span style={{ fontSize: 8, fontWeight: 900, color: "#fff", letterSpacing: 1, textTransform: "uppercase", position: "relative", zIndex: 1 }}>Barcode</span>
-          </button>
+        {/* ── Search ── */}
+        <div style={{ position: "relative", marginBottom: 18 }}>
+          <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }} />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search brands, products…"
+            style={{ width: "100%", height: 44, borderRadius: 14, border: "1.5px solid rgba(0,0,0,0.07)", background: "#fff", paddingLeft: 34, paddingRight: query ? 34 : 12, fontSize: 14, fontWeight: 600, color: "#1a1a3e", outline: "none", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", boxSizing: "border-box" }}
+          />
+          {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: 0, color: "#9ca3af" }}><X size={15} /></button>}
         </div>
 
         {/* ── Brands Grid ── */}
@@ -155,7 +126,7 @@ export function BrandsTab({ userId }: Props) {
         />
       )}
 
-      {showScanner && <BarcodeScanner onDetected={handleBarcode} onClose={() => setShowScanner(false)} />}
+
     </div>
   );
 }
