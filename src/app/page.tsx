@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { ToastProvider } from "@/lib/toast-context";
+import { useMarketList } from "@/lib/use-db";
 import { HomeTab } from "@/components/HomeTab";
 import { BrandsTab } from "@/components/BrandsTab";
 import { ListTab } from "@/components/ListTab";
@@ -144,7 +145,7 @@ export default function ReStockApp() {
           {tab === "print"    && <PrintTab userId={session.user.id} />}
           {tab === "settings" && <SettingsTab session={session} canInstall={canInstall} onInstall={installPWA} />}
         </div>
-        <BottomNav tab={tab} setTab={navigateTo} />
+        <BottomNavWithBadge tab={tab} setTab={navigateTo} userId={session.user.id} />
       </main>
     </ToastProvider>
   );
@@ -198,19 +199,27 @@ function LoginScreen({ onGoogle }: { onGoogle: () => void }) {
 }
 
 // ── Bottom Nav ────────────────────────────────────────────────────────────────
-function BottomNav({ tab, setTab }: { tab: TabId; setTab: (t: TabId) => void }) {
+function BottomNavWithBadge({ tab, setTab, userId }: { tab: TabId; setTab: (t: TabId) => void; userId: string }) {
+  const { data: listItems = [] } = useMarketList(userId);
+  const listCount = listItems.length;
   return (
     <nav className="no-print" style={{ position: "relative", background: "var(--nav-bg)", borderTop: "1px solid var(--border)", boxShadow: "var(--shadow-nav)", display: "flex", zIndex: 50, padding: "6px 4px calc(env(safe-area-inset-bottom,0px) + 7px)" }}>
       {tabs.map((item) => {
         const active = tab === item.id;
+        const showBadge = item.id === "list" && listCount > 0;
         return (
           <button
             key={item.id}
             onClick={() => setTab(item.id)}
             style={{ flex: 1, minHeight: 54, border: 0, background: "transparent", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, color: active ? item.color : "var(--text-dim)", fontWeight: active ? 900 : 600, fontSize: 9 }}
           >
-            <span style={{ width: 44, height: 30, borderRadius: 12, display: "grid", placeItems: "center", background: active ? `${item.color}22` : "transparent", boxShadow: active ? `0 0 12px ${item.color}44` : "none", transform: active ? "scale(1.06)" : "scale(1)", transition: "all 0.18s ease" }}>
+            <span style={{ width: 44, height: 30, borderRadius: 12, display: "grid", placeItems: "center", background: active ? `${item.color}22` : "transparent", boxShadow: active ? `0 0 12px ${item.color}44` : "none", transform: active ? "scale(1.06)" : "scale(1)", transition: "all 0.18s ease", position: "relative" }}>
               {item.icon}
+              {showBadge && (
+                <span style={{ position: "absolute", top: -4, right: -2, minWidth: 16, height: 16, borderRadius: 99, background: "#ef1d27", color: "#fff", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", border: "2px solid var(--nav-bg)", lineHeight: 1 }}>
+                  {listCount > 99 ? "99+" : listCount}
+                </span>
+              )}
             </span>
             {item.label}
           </button>
