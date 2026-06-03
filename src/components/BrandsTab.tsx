@@ -528,10 +528,22 @@ function ProductCard({ brand, product, variants, listVariantIds, onToggleVariant
     <div style={{ background: "#fff", borderRadius: 18, border: "1px solid rgba(0,0,0,0.07)", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
       {/* Product header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px 8px" }}>
-        {/* Brand logo */}
-        <div style={{ width: 32, height: 32, borderRadius: 9, overflow: "hidden", display: "grid", placeItems: "center", background: "#f4f4f8", flexShrink: 0, border: "1px solid rgba(0,0,0,0.06)" }}>
-          <ImgWithFallback src={brand.logo_url} alt={brand.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} fallbackStyle={{ fontSize: 13 }} />
-        </div>
+        {/* Product image (if available) or brand logo fallback */}
+        <button
+          onClick={() => { setEditingLogo(v => !v); setLogoVal(product.image_url ?? ""); }}
+          style={{ width: 64, height: 64, borderRadius: 14, overflow: "hidden", display: "grid", placeItems: "center", background: "#f4f4f8", flexShrink: 0, border: editingLogo ? "2px solid #4f46e5" : "1px solid rgba(0,0,0,0.07)", position: "relative", marginLeft: -4 }}
+        >
+          {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={product.image_url} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          ) : (
+            <ImgWithFallback src={brand.logo_url} alt={brand.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} fallbackStyle={{ fontSize: 16 }} />
+          )}
+          {/* edit overlay hint */}
+          <span style={{ position: "absolute", bottom: 2, right: 2, width: 14, height: 14, borderRadius: 4, background: "rgba(79,70,229,0.85)", display: "grid", placeItems: "center" }}>
+            <ImageIcon size={8} color="#fff" />
+          </span>
+        </button>
 
         {/* Product name */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -553,34 +565,25 @@ function ProductCard({ brand, product, variants, listVariantIds, onToggleVariant
               <Edit2 size={11} color="#c4c9d4" />
             </button>
           )}
+          <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", marginTop: 2 }}>{brand.name}</p>
         </div>
 
-        {/* Product image + delete */}
-        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button
-            onClick={() => { setEditingLogo(v => !v); setLogoVal(product.image_url ?? ""); }}
-            style={{ width: 30, height: 30, borderRadius: 9, border: editingLogo ? "2px solid #4f46e5" : "1px solid rgba(0,0,0,0.1)", background: "#f9fafb", display: "grid", placeItems: "center", overflow: "hidden" }}
-          >
-            {product.image_url
-              ? <ImgWithFallback src={product.image_url} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} fallbackStyle={{ fontSize: 10 }} />
-              : <ImageIcon size={13} color="#9ca3af" />
-            }
-          </button>
-          <button onClick={() => setShowDelete(v => !v)} style={{ width: 30, height: 30, borderRadius: 9, border: "1px solid rgba(0,0,0,0.1)", background: showDelete ? "#fef2f2" : "#f9fafb", display: "grid", placeItems: "center", color: showDelete ? "#ef4444" : "#9ca3af" }}>
-            <Trash2 size={13} />
-          </button>
-        </div>
+        {/* Delete */}
+        <button onClick={() => setShowDelete(v => !v)} style={{ width: 30, height: 30, borderRadius: 9, border: "1px solid rgba(0,0,0,0.1)", background: showDelete ? "#fef2f2" : "#f9fafb", display: "grid", placeItems: "center", color: showDelete ? "#ef4444" : "#9ca3af", flexShrink: 0 }}>
+          <Trash2 size={13} />
+        </button>
       </div>
 
       {/* Image URL input (inline) */}
       {editingLogo && (
-        <div className="fade-in" style={{ padding: "0 12px 10px", display: "flex", gap: 6 }}>
+        <div className="fade-in" style={{ padding: "0 12px 10px", display: "flex", gap: 6, alignItems: "center" }}>
+          <ImageIcon size={14} color="#9ca3af" style={{ flexShrink: 0 }} />
           <input
             autoFocus
             value={logoVal}
             onChange={e => setLogoVal(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") saveImage(); if (e.key === "Escape") setEditingLogo(false); }}
-            placeholder="Paste image URL…"
+            placeholder="Paste product image URL…"
             style={{ flex: 1, height: 34, borderRadius: 9, border: "1.5px solid #c7d2fe", background: "#eef2ff", padding: "0 9px", fontSize: 12.5, fontWeight: 600, color: "#1a1a3e", outline: "none" }}
           />
           <button onClick={saveImage} style={{ height: 34, borderRadius: 9, background: "#4f46e5", color: "#fff", border: 0, padding: "0 12px", fontWeight: 800, fontSize: 12 }}>Save</button>
