@@ -260,9 +260,16 @@ export function HomeTab({ userId, onTabChange }: Props) {
           </div>
           <button
             onClick={() => setShowScanner(true)}
-            style={{ width: 52, height: 52, borderRadius: 17, border: "1.5px solid var(--border)", background: "var(--card)", display: "grid", placeItems: "center", color: "#0891b2", flexShrink: 0, boxShadow: "0 2px 12px rgba(7,20,38,0.04)" }}
+            style={{ width: 80, height: 52, borderRadius: 17, border: "1.5px solid #0891b2", background: "#0891b2", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, flexShrink: 0, boxShadow: "0 4px 14px #0891b240", overflow: "hidden", position: "relative", padding: 0 }}
           >
-            <ScanBarcode size={22} />
+            {/* barcode lines bg */}
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "stretch", gap: 3, padding: "6px 8px", opacity: 0.18 }}>
+              {[3,1,2,1,3,1,2,1,3,1,2,1,3,1,2].map((w, i) => (
+                <div key={i} style={{ flex: w, background: "#fff", borderRadius: 1 }} />
+              ))}
+            </div>
+            <ScanBarcode size={18} color="#fff" style={{ position: "relative", zIndex: 1 }} />
+            <span style={{ fontSize: 8.5, fontWeight: 900, color: "#fff", letterSpacing: 1, textTransform: "uppercase", position: "relative", zIndex: 1 }}>Barcode</span>
           </button>
         </div>
 

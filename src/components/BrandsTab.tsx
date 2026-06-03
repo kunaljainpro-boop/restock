@@ -114,8 +114,14 @@ export function BrandsTab({ userId }: Props) {
             />
             {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: 0, color: "#9ca3af" }}><X size={15} /></button>}
           </div>
-          <button onClick={() => setShowScanner(true)} style={{ width: 44, height: 44, borderRadius: 14, border: "1.5px solid rgba(0,0,0,0.07)", background: "#fff", display: "grid", placeItems: "center", color: "#4f46e5", flexShrink: 0, boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-            <ScanBarcode size={20} />
+          <button onClick={() => setShowScanner(true)} style={{ width: 76, height: 44, borderRadius: 14, border: "none", background: "#4f46e5", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, flexShrink: 0, boxShadow: "0 4px 12px #4f46e540", overflow: "hidden", position: "relative", padding: 0 }}>
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "stretch", gap: 3, padding: "5px 7px", opacity: 0.18 }}>
+              {[3,1,2,1,3,1,2,1,3,1,2,1,3,1,2].map((w, i) => (
+                <div key={i} style={{ flex: w, background: "#fff", borderRadius: 1 }} />
+              ))}
+            </div>
+            <ScanBarcode size={16} color="#fff" style={{ position: "relative", zIndex: 1 }} />
+            <span style={{ fontSize: 8, fontWeight: 900, color: "#fff", letterSpacing: 1, textTransform: "uppercase", position: "relative", zIndex: 1 }}>Barcode</span>
           </button>
         </div>
 
